@@ -1,36 +1,59 @@
-// frontend/src/App.tsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import Login from './components/Login';
-import Register from './components/Register';
-import PrivateRoute from './components/PrivateRoute';
-import './styles/App.css';
-import { Flowbite } from "flowbite-react";
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+
+
+// Pages
+import Login from './pages/Login';
+import Register from './pages/Register';
+import AssociationList from './pages/AssociationList';
+import AssociationDashboard from './pages/AssociationDashboard';
+import CreateAssociation from './pages/CreateAssociation';
+import NotFound from './pages/NotFound';
+
+// Composant Layout
+import Layout from './components/Layout';
+
+// Route protégée qui nécessite une authentification
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return <div className="flex h-screen items-center justify-center">Chargement...</div>;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
+
+  return <>{children}</>;
+};
 
 const App: React.FC = () => {
-  console.log('App component is rendering...'); // Ajoutez ce log pour vérifier
   return (
     <AuthProvider>
-      <Flowbite>
-        <Router>
-          <div className="bg-gray-50 dark:bg-gray-900">
-            <div className="max-w-screen-xl mx-auto p-4 pt-20 min-h-screen pb-10">
-              <Routes>
-                {/* Routes publiques */}
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                {/* Routes privées */}
-                <Route element={<PrivateRoute />}>
-                  <Route path="/" element={<h1>Bienvenue sur la page principale</h1>} />
-                </Route>
-                {/* Redirection par défaut */}
-                <Route path="*" element={<Navigate to="/" />} />
-              </Routes>
-            </div>
-          </div>
-        </Router>
-      </Flowbite>
+      <Router>
+        <Routes>
+          {/* Routes publiques */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+
+          {/* Routes protégées */}
+          <Route path="/" element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<Navigate to="/associations" />} />
+            <Route path="associations" element={<AssociationList />} />
+            <Route path="associations/create" element={<CreateAssociation />} />
+            <Route path="associations/:associationId" element={<AssociationDashboard />} />
+          </Route>
+
+          {/* Page 404 */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Router>
     </AuthProvider>
   );
 };

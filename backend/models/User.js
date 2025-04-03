@@ -1,44 +1,41 @@
-// backend/models/User.js
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-const userSchema = new mongoose.Schema({
-  username: {
+const UserSchema = new mongoose.Schema({
+  name: {
     type: String,
-    required: true,
-    unique: true,
-    trim: true,
-    minlength: 3,
-    maxlength: 50
+    required: [true, 'Veuillez fournir un nom'],
+    trim: true
   },
   email: {
     type: String,
-    required: true,
+    required: [true, 'Veuillez fournir un email'],
     unique: true,
     trim: true,
     lowercase: true,
-    match: [/^\S+@\S+\.\S+$/, 'Veuillez fournir un email valide']
+    match: [
+      /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
+      'Veuillez fournir un email valide'
+    ]
   },
   password: {
     type: String,
-    required: true,
-    minlength: 6
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
+    required: [true, 'Veuillez fournir un mot de passe'],
+    minlength: 6,
+    select: false
   }
+}, {
+  timestamps: true
 });
 
-// Méthode pour hacher le mot de passe avant de sauvegarder
-userSchema.pre('save', async function(next) {
-  // Si le mot de passe n'a pas été modifié, passez à l'étape suivante
-  if (!this.isModified('password')) return next();
+// Hacher le mot de passe avant de sauvegarder
+UserSchema.pre('save', async function(next) {
+  if (!this.isModified('password')) {
+    return next();
+  }
 
   try {
-    // Générer un sel (salt)
     const salt = await bcrypt.genSalt(10);
-    // Hacher le mot de passe avec le sel
     this.password = await bcrypt.hash(this.password, salt);
     next();
   } catch (error) {
@@ -46,11 +43,4 @@ userSchema.pre('save', async function(next) {
   }
 });
 
-// Méthode pour comparer le mot de passe avec celui haché en base de données
-userSchema.methods.comparePassword = async function(candidatePassword) {
-  return bcrypt.compare(candidatePassword, this.password);
-};
-
-const User = mongoose.model('User', userSchema);
-
-module.exports = User;
+module.exports = mongoose.model('User', UserSchema);
