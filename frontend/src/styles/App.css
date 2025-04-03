@@ -1,0 +1,167 @@
+/* Ajouter à frontend/src/App.css */
+
+.container {
+  max-width: 600px;
+  margin: auto;
+}
+
+.todo-form,
+.todo-list {
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+/* Styles pour les formulaires d'authentification */
+.login-container,
+.register-container {
+  max-width: 400px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.login-container h2,
+.register-container h2 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  color: #333;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #555;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.form-group input:focus {
+  border-color: #4a90e2;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.25);
+}
+
+.submit-button {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.submit-button:hover {
+  background-color: #3a7bc8;
+}
+
+.submit-button:disabled {
+  background-color: #a5c7f0;
+  cursor: not-allowed;
+}
+
+.error-message {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background-color: #ffebee;
+  color: #c62828;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.login-link,
+.register-link {
+  margin-top: 1.5rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.login-link a,
+.register-link a {
+  color: #4a90e2;
+  text-decoration: none;
+}
+
+.login-link a:hover,
+.register-link a:hover {
+  text-decoration: underline;
+}
+
+/* Styles pour la barre de navigation */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: #4a90e2;
+  color: white;
+}
+
+.navbar-logo a {
+  color: white;
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.navbar-menu {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.navbar-link {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  transition: opacity 0.3s;
+}
+
+.navbar-link:hover {
+  opacity: 0.8;
+}
+
+.navbar-username {
+  font-weight: 500;
+}
+
+.navbar-logout {
+  background: none;
+  border: 1px solid white;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.3s;
+}
+
+.navbar-logout:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Styles pour le chargement */
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  color: #666;
+  font-style: italic;
+}
