@@ -5,8 +5,9 @@ import { useAuth } from '../contexts/AuthContext';
 import TransactionForm from '../components/TransactionForm';
 import TransactionList from '../components/TransactionList';
 import FinancialSummary from '../components/FinancialSummary';
+import MemberManagement from '../components/MemberManagement';
+import { FaEdit, FaUsers } from 'react-icons/fa';
 
-// Récupérer l'URL de l'API à partir des variables d'environnement
 const API_URL = import.meta.env.VITE_API_URL;
 
 interface Association {
@@ -23,7 +24,7 @@ const AssociationDashboard: React.FC = () => {
   const [association, setAssociation] = useState<Association | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'transactions' | 'summary' | 'add'>('transactions');
+  const [activeTab, setActiveTab] = useState<'transactions' | 'summary' | 'add' | 'members'>('transactions');
 
   // Charger les détails de l'association
   useEffect(() => {
@@ -31,19 +32,27 @@ const AssociationDashboard: React.FC = () => {
       try {
         setLoading(true);
 
+        console.log(`Tentative de récupération de l'association avec ID: ${associationId}`);
+        console.log(`URL complète: ${API_URL}/associations/${associationId}`);
+        console.log(`Token présent: ${token ? 'Oui' : 'Non'}`);
+
         const response = await axios.get(`${API_URL}/associations/${associationId}`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
         });
 
+        console.log('Réponse reçue:', response.data);
+
         if (response.data.success) {
           setAssociation(response.data.data);
         }
 
         setLoading(false);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Erreur lors de la récupération des détails de l\'association :', error);
+        console.error('Statut de la réponse:', error.response?.status);
+        console.error('Message d\'erreur:', error.response?.data);
         setError('Impossible de charger les détails de l\'association.');
         setLoading(false);
       }
@@ -115,12 +124,20 @@ const AssociationDashboard: React.FC = () => {
                 <p className="mt-2 text-gray-600">{association.description}</p>
               )}
             </div>
-            <button
-              onClick={() => navigate('/associations')}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-            >
-              Retour à la liste
-            </button>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => navigate(`/associations/${associationId}/edit`)}
+                className="px-4 py-2 text-sm font-medium text-blue-600 bg-white border border-blue-300 rounded-md hover:bg-blue-50 flex items-center"
+              >
+                <FaEdit className="mr-2" /> Modifier
+              </button>
+              <button
+                onClick={() => navigate('/associations')}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Retour à la liste
+              </button>
+            </div>
           </div>
         </div>
 
@@ -157,6 +174,16 @@ const AssociationDashboard: React.FC = () => {
             >
               Résumé financier
             </button>
+            <button
+              onClick={() => setActiveTab('members')}
+              className={`px-3 py-2 text-sm font-medium rounded-md flex items-center ${
+                activeTab === 'members'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+              }`}
+            >
+              <FaUsers className="mr-1" /> Membres
+            </button>
           </nav>
         </div>
 
@@ -169,6 +196,8 @@ const AssociationDashboard: React.FC = () => {
           )}
 
           {activeTab === 'summary' && <FinancialSummary />}
+
+          {activeTab === 'members' && <MemberManagement />}
         </div>
       </div>
     </div>

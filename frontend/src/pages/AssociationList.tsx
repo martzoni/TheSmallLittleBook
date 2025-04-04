@@ -4,8 +4,8 @@ import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { FaBuilding, FaPlus, FaUsers, FaRegCalendarAlt } from 'react-icons/fa';
 
-// Récupérer l'URL de l'API à partir des variables d'environnement
-const API_URL = import.meta.env.VITE_API_URL;
+// URL de l'API depuis les variables d'environnement
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 interface Association {
   _id: string;
@@ -14,11 +14,9 @@ interface Association {
   address?: string;
   email?: string;
   phone?: string;
-  members: Array<{
-    userId: string;
-    role: 'admin' | 'member' | 'treasurer';
-  }>;
   createdAt: string;
+  // Nouveau champ userRole qui remplace l'ancien champ members
+  userRole: 'admin' | 'member' | 'treasurer';
 }
 
 const AssociationList: React.FC = () => {
@@ -63,8 +61,10 @@ const AssociationList: React.FC = () => {
 
   // Obtenir le rôle de l'utilisateur dans l'association
   const getUserRole = (association: Association) => {
-    const member = association.members.find(m => m.userId === user?.id);
-    if (!member) return 'inconnu';
+    // Maintenant le rôle est directement disponible dans l'objet association
+    const role = association.userRole;
+
+    if (!role) return 'inconnu';
 
     // Traduire les rôles en français
     const roleTranslations = {
@@ -73,7 +73,7 @@ const AssociationList: React.FC = () => {
       'treasurer': 'Trésorier'
     };
 
-    return roleTranslations[member.role] || member.role;
+    return roleTranslations[role] || role;
   };
 
   // Afficher un message de chargement

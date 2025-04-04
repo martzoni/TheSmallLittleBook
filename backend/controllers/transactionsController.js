@@ -1,5 +1,6 @@
 const Transaction = require('../models/Transaction');
 const Association = require('../models/Association');
+const Member = require('../models/Member');
 const mongoose = require('mongoose');
 
 // Récupérer toutes les transactions d'une association
@@ -9,12 +10,12 @@ exports.getTransactions = async (req, res) => {
     const { startDate, endDate, type, category } = req.query;
 
     // Vérifier si l'utilisateur a accès à cette association
-    const association = await Association.findOne({
-      _id: associationId,
-      'members.userId': req.user.id
+    const membership = await Member.findOne({
+      association: associationId,
+      userId: req.user.id
     });
 
-    if (!association) {
+    if (!membership) {
       return res.status(403).json({
         success: false,
         message: "Vous n'avez pas accès à cette association"
@@ -64,15 +65,17 @@ exports.addTransaction = async (req, res) => {
     const { associationId } = req.params;
 
     // Vérifier si l'utilisateur a accès à cette association
-    const association = await Association.findOne({
-      _id: associationId,
-      'members.userId': req.user.id
+    // Pour ajouter une transaction, il doit être admin ou trésorier
+    const membership = await Member.findOne({
+      association: associationId,
+      userId: req.user.id,
+      role: { $in: ['admin', 'treasurer'] }
     });
 
-    if (!association) {
+    if (!membership) {
       return res.status(403).json({
         success: false,
-        message: "Vous n'avez pas accès à cette association"
+        message: "Vous n'avez pas les droits pour ajouter des transactions"
       });
     }
 
@@ -117,15 +120,17 @@ exports.updateTransaction = async (req, res) => {
     }
 
     // Vérifier si l'utilisateur a accès à cette association
-    const association = await Association.findOne({
-      _id: associationId,
-      'members.userId': req.user.id
+    // Pour modifier une transaction, il doit être admin ou trésorier
+    const membership = await Member.findOne({
+      association: associationId,
+      userId: req.user.id,
+      role: { $in: ['admin', 'treasurer'] }
     });
 
-    if (!association) {
+    if (!membership) {
       return res.status(403).json({
         success: false,
-        message: "Vous n'avez pas accès à cette association"
+        message: "Vous n'avez pas les droits pour modifier des transactions"
       });
     }
 
@@ -169,15 +174,17 @@ exports.deleteTransaction = async (req, res) => {
     }
 
     // Vérifier si l'utilisateur a accès à cette association
-    const association = await Association.findOne({
-      _id: associationId,
-      'members.userId': req.user.id
+    // Pour supprimer une transaction, il doit être admin ou trésorier
+    const membership = await Member.findOne({
+      association: associationId,
+      userId: req.user.id,
+      role: { $in: ['admin', 'treasurer'] }
     });
 
-    if (!association) {
+    if (!membership) {
       return res.status(403).json({
         success: false,
-        message: "Vous n'avez pas accès à cette association"
+        message: "Vous n'avez pas les droits pour supprimer des transactions"
       });
     }
 
@@ -204,12 +211,12 @@ exports.getFinancialSummary = async (req, res) => {
     const { startDate, endDate } = req.query;
 
     // Vérifier si l'utilisateur a accès à cette association
-    const association = await Association.findOne({
-      _id: associationId,
-      'members.userId': req.user.id
+    const membership = await Member.findOne({
+      association: associationId,
+      userId: req.user.id
     });
 
-    if (!association) {
+    if (!membership) {
       return res.status(403).json({
         success: false,
         message: "Vous n'avez pas accès à cette association"

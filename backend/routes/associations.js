@@ -12,6 +12,5 @@ router.post('/', associationController.createAssociation);
 router.get('/:id', associationController.getAssociationById);
 router.put('/:id', associationController.updateAssociation);
 router.put('/:id/categories', associationController.addCategory);
-router.post('/:id/members', associationController.manageMembers);
 
 module.exports = router;

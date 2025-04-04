@@ -8,6 +8,7 @@ const path = require('path');
 const authRoutes = require('./routes/auth');
 const associationRoutes = require('./routes/associations');
 const transactionRoutes = require('./routes/transactions');
+const memberRoutes = require('./routes/members');
 
 // Charger les variables d'environnement
 dotenv.config();
@@ -37,6 +38,7 @@ mongoose
 app.use('/api/auth', authRoutes);
 app.use('/api/associations', associationRoutes);
 app.use('/api/transactions', transactionRoutes);
+app.use('/api/members', memberRoutes);
 
 // Route pour vérifier que l'API fonctionne
 app.get('/api/health', (req, res) => {

@@ -2,13 +2,13 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
-
 // Pages
 import Login from './pages/Login';
 import Register from './pages/Register';
 import AssociationList from './pages/AssociationList';
 import AssociationDashboard from './pages/AssociationDashboard';
 import CreateAssociation from './pages/CreateAssociation';
+import EditAssociation from './pages/EditAssociation';
 import NotFound from './pages/NotFound';
 
 // Composant Layout
@@ -48,6 +48,7 @@ const App: React.FC = () => {
             <Route path="associations" element={<AssociationList />} />
             <Route path="associations/create" element={<CreateAssociation />} />
             <Route path="associations/:associationId" element={<AssociationDashboard />} />
+            <Route path="associations/:associationId/edit" element={<EditAssociation />} />
           </Route>
 
           {/* Page 404 */}

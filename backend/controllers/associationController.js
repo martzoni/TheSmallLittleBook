@@ -1,16 +1,39 @@
 const Association = require('../models/Association');
+const Member = require('../models/Member');
+const User = require('../models/User');
 
 // Récupérer toutes les associations de l'utilisateur
 exports.getAssociations = async (req, res) => {
   try {
+    // Trouver les associations où l'utilisateur est membre
+    const memberships = await Member.find({
+      userId: req.user.id
+    });
+
+    // Extraire les IDs d'associations
+    const associationIds = memberships.map(membership => membership.association);
+
+    // Récupérer les associations correspondantes
     const associations = await Association.find({
-      'members.userId': req.user.id
+      _id: { $in: associationIds }
     }).sort({ createdAt: -1 });
+
+    // Ajouter l'information de rôle à chaque association
+    const associationsWithRole = associations.map(association => {
+      const membership = memberships.find(m =>
+        m.association.toString() === association._id.toString()
+      );
+
+      return {
+        ...association.toObject(),
+        userRole: membership ? membership.role : null
+      };
+    });
 
     res.json({
       success: true,
       count: associations.length,
-      data: associations
+      data: associationsWithRole
     });
   } catch (error) {
     console.error('Erreur lors de la récupération des associations :', error);
@@ -25,10 +48,24 @@ exports.getAssociations = async (req, res) => {
 // Récupérer une association par son ID
 exports.getAssociationById = async (req, res) => {
   try {
-    const association = await Association.findOne({
-      _id: req.params.id,
-      'members.userId': req.user.id
+    const { populate } = req.query;
+    const associationId = req.params.id;
+
+    // Vérifier si l'utilisateur est membre de cette association
+    const membership = await Member.findOne({
+      association: associationId,
+      userId: req.user.id
     });
+
+    if (!membership) {
+      return res.status(403).json({
+        success: false,
+        message: "Vous n'avez pas accès à cette association"
+      });
+    }
+
+    // Récupérer l'association
+    const association = await Association.findById(associationId);
 
     if (!association) {
       return res.status(404).json({
@@ -37,9 +74,24 @@ exports.getAssociationById = async (req, res) => {
       });
     }
 
+    // Si on demande de charger les détails des membres
+    let members = [];
+    if (populate === 'members') {
+      members = await Member.find({ association: associationId })
+        .populate('userId', 'name email')
+        .sort({ role: 1, name: 1 });
+    }
+
+    // Créer une réponse enrichie
+    const response = {
+      ...association.toObject(),
+      userRole: membership.role,
+      members: populate === 'members' ? members : undefined
+    };
+
     res.json({
       success: true,
-      data: association
+      data: response
     });
   } catch (error) {
     console.error('Erreur lors de la récupération de l\'association :', error);
@@ -50,6 +102,7 @@ exports.getAssociationById = async (req, res) => {
     });
   }
 };
+
 
 // Créer une nouvelle association
 exports.createAssociation = async (req, res) => {
@@ -64,14 +117,45 @@ exports.createAssociation = async (req, res) => {
       });
     }
 
-    // Créer l'association avec l'utilisateur comme admin
+    // Récupérer les informations complètes de l'utilisateur pour avoir son email
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Utilisateur non trouvé'
+      });
+    }
+
+    // S'assurer que l'email existe
+    if (!user.email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Utilisateur sans email valide'
+      });
+    }
+
+    // Créer l'association
     const association = new Association({
       ...req.body,
-      members: [{ userId: req.user.id, role: 'admin' }],
       createdBy: req.user.id
     });
 
     await association.save();
+
+    // Ajouter l'utilisateur comme admin de l'association avec validation de l'email
+    console.log(`Création d'un membre avec email: ${user.email} et nom: ${user.name}`);
+
+    const member = new Member({
+      userId: req.user.id,
+      email: user.email,
+      name: user.name || 'Utilisateur',
+      role: 'admin',
+      association: association._id,
+      status: 'active'
+    });
+
+    await member.save();
 
     res.status(201).json({
       success: true,
@@ -79,6 +163,10 @@ exports.createAssociation = async (req, res) => {
     });
   } catch (error) {
     console.error('Erreur lors de la création de l\'association :', error);
+    // Log plus détaillé pour débugger le problème
+    if (error.name === 'ValidationError') {
+      console.error('Détails de l\'erreur de validation:', JSON.stringify(error.errors));
+    }
     res.status(500).json({
       success: false,
       message: 'Erreur serveur',
@@ -90,29 +178,35 @@ exports.createAssociation = async (req, res) => {
 // Mettre à jour une association
 exports.updateAssociation = async (req, res) => {
   try {
+    const associationId = req.params.id;
+
     // Vérifier si l'utilisateur est admin de l'association
-    const association = await Association.findOne({
-      _id: req.params.id,
-      'members.userId': req.user.id,
-      'members.role': 'admin'
+    const membership = await Member.findOne({
+      association: associationId,
+      userId: req.user.id,
+      role: 'admin'
     });
 
-    if (!association) {
+    if (!membership) {
       return res.status(403).json({
         success: false,
         message: 'Vous n\'avez pas les droits pour modifier cette association'
       });
     }
 
-    // Éviter de modifier directement les membres via cette route
-    const { members, ...updateData } = req.body;
-
     // Mettre à jour l'association
     const updatedAssociation = await Association.findByIdAndUpdate(
-      req.params.id,
-      updateData,
+      associationId,
+      req.body,
       { new: true, runValidators: true }
     );
+
+    if (!updatedAssociation) {
+      return res.status(404).json({
+        success: false,
+        message: 'Association non trouvée'
+      });
+    }
 
     res.json({
       success: true,
@@ -131,7 +225,7 @@ exports.updateAssociation = async (req, res) => {
 // Ajouter une catégorie à une association
 exports.addCategory = async (req, res) => {
   try {
-    const { id } = req.params;
+    const associationId = req.params.id;
     const { category } = req.body;
 
     if (!category) {
@@ -142,15 +236,25 @@ exports.addCategory = async (req, res) => {
     }
 
     // Vérifier si l'utilisateur est membre de l'association
-    const association = await Association.findOne({
-      _id: id,
-      'members.userId': req.user.id
+    const membership = await Member.findOne({
+      association: associationId,
+      userId: req.user.id
     });
 
-    if (!association) {
+    if (!membership) {
       return res.status(403).json({
         success: false,
         message: 'Vous n\'avez pas accès à cette association'
+      });
+    }
+
+    // Récupérer l'association
+    const association = await Association.findById(associationId);
+
+    if (!association) {
+      return res.status(404).json({
+        success: false,
+        message: 'Association non trouvée'
       });
     }
 
@@ -172,99 +276,6 @@ exports.addCategory = async (req, res) => {
     });
   } catch (error) {
     console.error('Erreur lors de l\'ajout de la catégorie :', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur serveur',
-      error: error.message
-    });
-  }
-};
-
-// Gérer les membres d'une association
-exports.manageMembers = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { action, userId, role } = req.body;
-
-    // Vérifier si l'utilisateur est admin de l'association
-    const association = await Association.findOne({
-      _id: id,
-      'members.userId': req.user.id,
-      'members.role': 'admin'
-    });
-
-    if (!association) {
-      return res.status(403).json({
-        success: false,
-        message: 'Vous n\'avez pas les droits pour gérer les membres de cette association'
-      });
-    }
-
-    if (action === 'add') {
-      // Vérifier si l'utilisateur est déjà membre
-      const isMember = association.members.some(member =>
-        member.userId.toString() === userId
-      );
-
-      if (isMember) {
-        return res.status(400).json({
-          success: false,
-          message: 'Cet utilisateur est déjà membre de l\'association'
-        });
-      }
-
-      // Ajouter le membre
-      association.members.push({ userId, role: role || 'member' });
-    } else if (action === 'update') {
-      // Mettre à jour le rôle du membre
-      const memberIndex = association.members.findIndex(member =>
-        member.userId.toString() === userId
-      );
-
-      if (memberIndex === -1) {
-        return res.status(404).json({
-          success: false,
-          message: 'Cet utilisateur n\'est pas membre de l\'association'
-        });
-      }
-
-      association.members[memberIndex].role = role;
-    } else if (action === 'remove') {
-      // Empêcher de supprimer le dernier admin
-      const adminCount = association.members.filter(member =>
-        member.role === 'admin'
-      ).length;
-
-      const memberToRemove = association.members.find(member =>
-        member.userId.toString() === userId
-      );
-
-      if (memberToRemove && memberToRemove.role === 'admin' && adminCount <= 1) {
-        return res.status(400).json({
-          success: false,
-          message: 'Impossible de supprimer le dernier administrateur'
-        });
-      }
-
-      // Supprimer le membre
-      association.members = association.members.filter(member =>
-        member.userId.toString() !== userId
-      );
-    } else {
-      return res.status(400).json({
-        success: false,
-        message: 'Action non valide'
-      });
-    }
-
-    await association.save();
-
-    res.json({
-      success: true,
-      data: association
-    });
-  } catch (error) {
-    console.error('Erreur lors de la gestion des membres :', error);
     res.status(500).json({
       success: false,
       message: 'Erreur serveur',

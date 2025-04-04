@@ -27,18 +27,6 @@ const AssociationSchema = new mongoose.Schema({
     type: String,
     trim: true
   }],
-  members: [{
-    userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true
-    },
-    role: {
-      type: String,
-      enum: ['admin', 'member', 'treasurer'],
-      default: 'member'
-    }
-  }],
   fiscalYearStart: {
     type: Date,
     default: function() {
