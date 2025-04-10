@@ -21,7 +21,7 @@ const Layout: React.FC = () => {
             <div className="flex">
               <Link to="/" className="flex-shrink-0 flex items-center">
                 <span className="text-lg font-bold text-blue-600">
-                  TheSmallLittleBook
+                  Le petit grand Livre
                 </span>
               </Link>
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
